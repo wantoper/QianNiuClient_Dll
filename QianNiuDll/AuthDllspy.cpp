@@ -17,7 +17,6 @@ QWORD g_AuthDllWinDllAddr = 0;
 void InitAuthspy() {
     HMODULE hModule = GetModuleHandle(AuthDll);
     g_AuthDllWinDllAddr = (QWORD)hModule;
-
 }
 
 void clean_login() {      
@@ -69,7 +68,7 @@ void getusernamepassword() {
     MessageBox(hwnd, password, L"信息", MB_ICONINFORMATION);
 }
 
-void input_Account(string username, string password) {
+void input_Account(wchar_t* username, wchar_t* password) {
     QWORD tmp;
     tmp = *(QWORD*)(g_AuthDllWinDllAddr + 0x002D2250);
     tmp = *(QWORD*)(tmp + 0x30);
@@ -85,8 +84,8 @@ void input_Account(string username, string password) {
     wchar_t* passwordp = (wchar_t*)(passwordtmp + 0x230);
 
 
-    wcscpy_s(usernamep, 256, String2Wstring(username).c_str());
-    wcscpy_s(passwordp, 256, String2Wstring(password).c_str());
+    wcscpy_s(usernamep, 256, username);
+    wcscpy_s(passwordp, 256, password);
 
     //wcscpy_s(usernamep, 256, username);
     //wcscpy_s(passwordp, 256, password);
@@ -96,4 +95,24 @@ void login() {
     QWORD RCX = *(QWORD*)(g_AuthDllWinDllAddr + 0x2D2250);
     Login_Click login = (Login_Click)((*(QWORD*)RCX) - 0x10CEB0);
     login(RCX, 0x000000000000000F, 0x00000000FFFFFFFF, 0x0000000000000001);
+}
+
+typedef struct QNParam {
+    wchar_t username[MAX_PATH];
+    wchar_t password[MAX_PATH];
+} QNParam_t;
+
+void InitSpy(LPVOID args)
+{
+    wchar_t version[16] = { 0 };
+    QNParam* pp = (QNParam*)args;
+
+    //HWND hwnd = GetActiveWindow();
+    //MessageBox(hwnd, pp->username, L"信息", MB_ICONINFORMATION);
+    //MessageBox(hwnd,L"Message!!!!!!!!", L"信息", MB_ICONINFORMATION);
+
+    InitAuthspy();
+    clean_login();
+    input_Account(pp->username,pp->password);
+    login();
 }

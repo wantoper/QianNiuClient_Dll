@@ -15,6 +15,12 @@
 //    login();
 //}
 
+typedef struct PortPath {
+    int port;
+    char path[MAX_PATH];
+} PortPath_t;
+
+
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -23,8 +29,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH: {
-        HWND hwnd = GetActiveWindow();
-        MessageBox(hwnd, L"DLL已进入目标进程。", L"信息", MB_ICONINFORMATION);
+        //HWND hwnd = GetActiveWindow();
+        //MessageBox(hwnd, L"DLL已进入目标进程。", L"信息", MB_ICONINFORMATION);
         //getusernamepassword();
         break;
     }    
