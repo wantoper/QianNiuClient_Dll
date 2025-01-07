@@ -4,8 +4,12 @@
 #include "util.h"
 using namespace std;
 
-
 #define AuthDll L"AliAuthSDK.dll"
+
+typedef struct QNParam {
+    wchar_t username[MAX_PATH];
+    wchar_t password[MAX_PATH];
+} QNParam_t;
 
 typedef uint64_t QWORD;
 typedef QWORD(*Delaccount_Click)(QWORD, QWORD, QWORD, QWORD);
@@ -14,12 +18,7 @@ typedef QWORD(*Login_Click)(QWORD, QWORD, QWORD, QWORD);
 
 QWORD g_AuthDllWinDllAddr = 0;
 
-void InitAuthspy() {
-    HMODULE hModule = GetModuleHandle(AuthDll);
-    g_AuthDllWinDllAddr = (QWORD)hModule;
-}
-
-void clean_login() {      
+void clean_Login() {      
     //RCX = "AliAuthSDK.dll" + 002D2250 30 1C8 88 130 90 90
     QWORD RCX = *(QWORD*)(g_AuthDllWinDllAddr + 0x2D2250);
     RCX = *(QWORD*)(RCX + 0x30);
@@ -97,22 +96,15 @@ void login() {
     login(RCX, 0x000000000000000F, 0x00000000FFFFFFFF, 0x0000000000000001);
 }
 
-typedef struct QNParam {
-    wchar_t username[MAX_PATH];
-    wchar_t password[MAX_PATH];
-} QNParam_t;
 
-void InitSpy(LPVOID args)
-{
+void InitAuthspy(LPVOID args) {
+    HMODULE hModule = GetModuleHandle(AuthDll);
+    g_AuthDllWinDllAddr = (QWORD)hModule;
+
     wchar_t version[16] = { 0 };
     QNParam* pp = (QNParam*)args;
 
-    //HWND hwnd = GetActiveWindow();
-    //MessageBox(hwnd, pp->username, L"信息", MB_ICONINFORMATION);
-    //MessageBox(hwnd,L"Message!!!!!!!!", L"信息", MB_ICONINFORMATION);
-
-    InitAuthspy();
-    clean_login();
-    input_Account(pp->username,pp->password);
+    clean_Login();
+    input_Account(pp->username, pp->password);
     login();
 }

@@ -4,6 +4,7 @@
 #include <tchar.h>
 #include "psapi.h"
 #include <string>
+#include <codecvt> // for std::wstring_convert
 using namespace std;
 
 // 传入进程名称返回该进程PID
@@ -132,7 +133,7 @@ static UINT64 GetFuncOffset(LPCWSTR dllPath, LPCSTR funcName)
     }
 
     LPVOID absAddr = GetProcAddress(dll, funcName);
-    std::wcout << L"GetFuncOffset: " << absAddr << std::endl;
+    //std::wcout << L"GetFuncOffset: " << absAddr << std::endl;
     UINT64 offset = (UINT64)absAddr - (UINT64)dll;
     FreeLibrary(dll);
 
@@ -185,25 +186,60 @@ typedef struct QNParam {
     wchar_t password[MAX_PATH];
 } QNParam_t;
 
+std::wstring StringToWideString(const std::string& str) {
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    return converter.from_bytes(str);
+}
 
-
-int main(int argc, char* argv[])
+int wmain(int argc, wchar_t* argv[])
 {
-    //SetConsoleOutputCP(65001);
-    //std::wcout << L"Start... " << std::endl;
-    DWORD pid = FindProcessID(L"AliWorkbench.exe");
-    std::wcout << L"PID: " << pid << std::endl;
-    const wchar_t* dllpath = L"C:\\Users\\Administrator\\Desktop\\Wantoper-Hexo\\QianNiuClient_Dll\\x64\\Release\\QianNiuDll.dll";
-    HANDLE hProcess = ApcInjectDll(pid, dllpath);
+    if (argc < 5) {
+        std::wcerr << L"Usage: " << argv[0] << L" <app_path> <dll_path> <username> <password> [delay_time]" << std::endl;
+        return 1;
+    }
 
+    std::wstring appPath(argv[1]);
+    std::wstring dllPath(argv[2]);
+    std::wstring username(argv[3]);
+    std::wstring password(argv[4]);
+
+    STARTUPINFO si = { sizeof(si) };
+    PROCESS_INFORMATION pi;
+    if (!CreateProcess(appPath.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+        std::wcerr << L"Failed to start application: " << appPath << std::endl;
+        return 1;
+    }
+
+    Sleep(2000);
+
+    DWORD pid = pi.dwProcessId;
+    //DWORD pid = FindProcessID(L"AliWorkbench.exe");
+
+    //const wchar_t* dllpath = L"C:\\Users\\Administrator\\Desktop\\Wantoper-Hexo\\QianNiuClient_Dll\\x64\\Release\\QianNiuDll.dll";
+    HANDLE hProcess = ApcInjectDll(pid, dllPath.c_str());
 
     Sleep(2000);
     HMODULE dllBase = GetTargetModuleBase(hProcess, "QianNiuDll.dll");
     QNParam_t param = { 0 };
-    wcscpy_s(param.username, MAX_PATH, L"达欣源灯具直销店:小月");
-    wcscpy_s(param.password, MAX_PATH, L"dajiahao1398");
+    wcscpy_s(param.username, MAX_PATH, username.c_str());
+    wcscpy_s(param.password, MAX_PATH, password.c_str());
+    //wcscpy_s(param.username, MAX_PATH, L"达欣源灯具直销店:小月");
+    //wcscpy_s(param.password, MAX_PATH, L"dajiahao1398");
 
-    std::wcout << L"dllBase: " << dllBase << std::endl;
-    bool is = CallDllFuncEx(hProcess, dllpath, dllBase, "InitSpy", (LPVOID)&param, sizeof(QNParam_t), NULL);
+    //std::wcout << L"dllBase: " << dllBase << std::endl;
+    bool is = CallDllFuncEx(hProcess, dllPath.c_str(), dllBase, "InitAuthspy", (LPVOID)&param, sizeof(QNParam_t), NULL);
+
+    if (argc >= 6) {
+        int delayTime = std::stoi(argv[5]);
+        std::wcout << L"Waiting for " << delayTime << L"s before closing the application..." << std::endl;
+        Sleep(delayTime*1000);
+
+        // 关闭应用
+        TerminateProcess(pi.hProcess, 0);
+    }
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
     return 0;
 }
