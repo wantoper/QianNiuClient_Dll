@@ -103,12 +103,12 @@ HMODULE GetTargetModuleBase(HANDLE process, string dll)
     HMODULE moduleHandleList[512];
     BOOL ret = EnumProcessModulesEx(process, moduleHandleList, sizeof(moduleHandleList), &cbNeeded, LIST_MODULES_64BIT);
     if (!ret) {
-        MessageBox(NULL, L"获取模块失败", L"GetTargetModuleBase", 0);
+        //MessageBox(NULL, L"获取模块失败", L"GetTargetModuleBase", 0);
         return NULL;
     }
 
     if (cbNeeded > sizeof(moduleHandleList)) {
-        MessageBox(NULL, L"模块数量过多", L"GetTargetModuleBase", 0);
+        //MessageBox(NULL, L"模块数量过多", L"GetTargetModuleBase", 0);
         return NULL;
     }
     DWORD processCount = cbNeeded / sizeof(HMODULE);
@@ -128,7 +128,7 @@ static UINT64 GetFuncOffset(LPCWSTR dllPath, LPCSTR funcName)
 {
     HMODULE dll = LoadLibrary(dllPath);
     if (dll == NULL) {
-        MessageBox(NULL, L"获取 DLL 失败", L"GetFuncOffset", 0);
+        //MessageBox(NULL, L"获取 DLL 失败", L"GetFuncOffset", 0);
         return 0;
     }
 
@@ -158,7 +158,7 @@ bool CallDllFuncEx(HANDLE process, LPCWSTR dllPath, HMODULE dllBase, LPCSTR func
 
     LPVOID pRemoteAddress = VirtualAllocEx(process, NULL, sz, MEM_COMMIT, PAGE_READWRITE);
     if (pRemoteAddress == NULL) {
-        MessageBox(NULL, L"申请内存失败", L"CallDllFuncEx", 0);
+        //MessageBox(NULL, L"申请内存失败", L"CallDllFuncEx", 0);
         return NULL;
     }
 
@@ -167,7 +167,7 @@ bool CallDllFuncEx(HANDLE process, LPCWSTR dllPath, HMODULE dllBase, LPCSTR func
     HANDLE hThread = CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)pFunc, pRemoteAddress, 0, NULL);
     if (hThread == NULL) {
         VirtualFree(pRemoteAddress, 0, MEM_RELEASE);
-        MessageBox(NULL, L"remote call error", L"CallDllFuncEx", 0);
+        //MessageBox(NULL, L"remote call error", L"CallDllFuncEx", 0);
         return false;
     }
     WaitForSingleObject(hThread, INFINITE);
@@ -209,8 +209,6 @@ int wmain(int argc, wchar_t* argv[])
         std::wcerr << L"Failed to start application: " << appPath << std::endl;
         return 1;
     }
-
-    Sleep(2000);
 
     DWORD pid = pi.dwProcessId;
     //DWORD pid = FindProcessID(L"AliWorkbench.exe");
